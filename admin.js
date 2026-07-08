@@ -1,4 +1,4 @@
-const ADMIN_PASSWORT = "1234";
+const ADMIN_PASSWORT = "2017";
 
 function login() {
 const pw = document.getElementById("passwort").value;
