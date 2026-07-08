@@ -1,10 +1,20 @@
-const ADMIN_PASSWORT = "1234"; // änder das Passwort hier
+function getPasswort() {
+try {
+const p = localStorage.getItem("geburtstag_passwort");
+if (p) return p;
+} catch(e) {}
+return "1234";
+}
+
+function setPasswort(p) {
+localStorage.setItem("geburtstag_passwort", p);
+}
 
 function login() {
 const pw = document.getElementById("passwort").value;
 document.getElementById("loginFehler").textContent = "";
 
-if (pw === ADMIN_PASSWORT) {
+if (pw === getPasswort()) {
 document.getElementById("loginBox").style.display = "none";
 document.getElementById("adminPanel").style.display = "block";
 codesAnzeigen();
@@ -18,6 +28,31 @@ document.getElementById("loginFehler").textContent = "Falsches Passwort.";
 document.getElementById("passwort").addEventListener("keydown", function(e) {
 if (e.key === "Enter") login();
 });
+
+function passwortAendern() {
+const alt = document.getElementById("altesPasswort").value;
+const neu = document.getElementById("neuesPasswort").value;
+const status = document.getElementById("passwortStatus");
+
+if (alt !== getPasswort()) {
+status.textContent = "Altes Passwort ist falsch.";
+return;
+}
+if (!neu || neu.length < 3) {
+status.textContent = "Neues Passwort muss mind. 3 Zeichen haben.";
+return;
+}
+
+setPasswort(neu);
+status.textContent = "Passwort geändert!";
+status.style.color = "#28a745";
+document.getElementById("altesPasswort").value = "";
+document.getElementById("neuesPasswort").value = "";
+setTimeout(() => {
+status.textContent = "";
+status.style.color = "#dc3545";
+}, 2000);
+}
 
 function logout() {
 document.getElementById("loginBox").style.display = "block";

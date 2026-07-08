@@ -291,3 +291,19 @@ color: #28a745;
 .rsvp-status.abgesagt {
 color: #dc3545;
 }
+
+.passwort-section {
+margin-top: 25px;
+text-align: left;
+}
+
+.passwort-section summary {
+cursor: pointer;
+color: #888;
+font-size: 14px;
+padding: 8px 0;
+}
+
+.passwort-section summary:hover {
+color: #555;
+}
