@@ -29,31 +29,6 @@ document.getElementById("passwort").addEventListener("keydown", function(e) {
 if (e.key === "Enter") login();
 });
 
-function passwortAendern() {
-const alt = document.getElementById("altesPasswort").value;
-const neu = document.getElementById("neuesPasswort").value;
-const status = document.getElementById("passwortStatus");
-
-if (alt !== getPasswort()) {
-status.textContent = "Altes Passwort ist falsch.";
-return;
-}
-if (!neu || neu.length < 3) {
-status.textContent = "Neues Passwort muss mind. 3 Zeichen haben.";
-return;
-}
-
-setPasswort(neu);
-status.textContent = "Passwort geändert!";
-status.style.color = "#28a745";
-document.getElementById("altesPasswort").value = "";
-document.getElementById("neuesPasswort").value = "";
-setTimeout(() => {
-status.textContent = "";
-status.style.color = "#dc3545";
-}, 2000);
-}
-
 function logout() {
 document.getElementById("loginBox").style.display = "block";
 document.getElementById("adminPanel").style.display = "none";
@@ -79,89 +54,75 @@ document.getElementById("tabDesign").style.display = "block";
 }
 }
 
-function getCodes() {
-try {
-const d = localStorage.getItem("geburtstag_codes");
-if (d) return JSON.parse(d);
-} catch(e) {}
-return {};
-}
+let bearbeiteKey = null;
 
-function setCodes(codes) {
-localStorage.setItem("geburtstag_codes", JSON.stringify(codes));
-}
-
-function codesAnzeigen() {
-const codes = getCodes();
+async function codesAnzeigen() {
 const liste = document.getElementById("codeListe");
+liste.innerHTML = '<p class="hinweis">Lade...</p>';
+try {
+const snap = await db.collection("codes").get();
 liste.innerHTML = "";
-
-const keys = Object.keys(codes);
-if (keys.length === 0) {
+if (snap.empty) {
 liste.innerHTML = '<p class="hinweis">Noch keine Codes angelegt.</p>';
 return;
 }
-
-keys.forEach(key => {
-const c = codes[key];
+snap.forEach(doc => {
+const c = doc.data();
 const div = document.createElement("div");
 div.className = "code-eintrag";
 div.innerHTML = `
-<strong>${key}</strong>
+<strong>${doc.id}</strong>
 <p>${c.titel || ""} - ${c.text ? c.text.substring(0, 50) : ""}</p>
-<button class="edit" onclick="codeBearbeiten('${key}')">Bearbeiten</button>
-<button class="delete" onclick="codeLoeschen('${key}')">Löschen</button>
+<button class="edit" onclick="codeBearbeiten('${doc.id}')">Bearbeiten</button>
+<button class="delete" onclick="codeLoeschen('${doc.id}')">Löschen</button>
 `;
 liste.appendChild(div);
 });
+} catch(e) {
+liste.innerHTML = '<p class="hinweis">Fehler beim Laden. Firestore aktiviert?</p>';
+}
 }
 
-let bearbeiteKey = null;
-
-function codeSpeichern() {
+async function codeSpeichern() {
 const key = document.getElementById("codeKey").value.trim().toUpperCase();
 const titel = document.getElementById("codeTitel").value.trim();
 const text = document.getElementById("codeText").value.trim();
 
-if (!key) {
-alert("Bitte einen Code eingeben.");
-return;
-}
+if (!key) { alert("Bitte einen Code eingeben."); return; }
 
-const codes = getCodes();
-
+try {
 if (bearbeiteKey && bearbeiteKey !== key) {
-delete codes[bearbeiteKey];
+await db.collection("codes").doc(bearbeiteKey).delete();
 }
-
-codes[key] = { titel: titel, text: text, bild: "" };
-setCodes(codes);
+await db.collection("codes").doc(key).set({ titel: titel, text: text, bild: "" });
 codeFormZuruecksetzen();
 codesAnzeigen();
+} catch(e) {
+alert("Fehler beim Speichern: " + e.message);
+}
 }
 
 function codeBearbeiten(key) {
-const codes = getCodes();
-const c = codes[key];
-if (!c) return;
-
-document.getElementById("codeKey").value = key;
-document.getElementById("codeTitel").value = c.titel || "";
-document.getElementById("codeText").value = c.text || "";
+const input = document.getElementById("codeKey");
+input.value = key;
 bearbeiteKey = key;
+db.collection("codes").doc(key).get().then(doc => {
+if (doc.exists) {
+document.getElementById("codeTitel").value = doc.data().titel || "";
+document.getElementById("codeText").value = doc.data().text || "";
+}
+});
 }
 
-function codeLoeschen(key) {
+async function codeLoeschen(key) {
 if (!confirm(`Code "${key}" wirklich löschen?`)) return;
-const codes = getCodes();
-delete codes[key];
-setCodes(codes);
+try {
+await db.collection("codes").doc(key).delete();
 codesAnzeigen();
+} catch(e) {}
 }
 
-function codeAbbrechen() {
-codeFormZuruecksetzen();
-}
+function codeAbbrechen() { codeFormZuruecksetzen(); }
 
 function codeFormZuruecksetzen() {
 document.getElementById("codeKey").value = "";
@@ -170,20 +131,60 @@ document.getElementById("codeText").value = "";
 bearbeiteKey = null;
 }
 
-function getEinstellungen() {
+async function rsvpAnzeigen() {
+const liste = document.getElementById("rsvpListe");
+liste.innerHTML = '<p class="hinweis">Lade...</p>';
 try {
-const e = localStorage.getItem("geburtstag_einstellungen");
-if (e) return JSON.parse(e);
-} catch(e) {}
-return { beschreibung: "", bild: "" };
+const codes = {};
+const csnap = await db.collection("codes").get();
+csnap.forEach(doc => { codes[doc.id] = doc.data(); });
+
+const rsnap = await db.collection("rsvp").get();
+liste.innerHTML = "";
+if (rsnap.empty) {
+liste.innerHTML = '<p class="hinweis">Noch keine Rückmeldungen.</p>';
+return;
+}
+rsnap.forEach(doc => {
+const antwort = doc.data().antwort;
+const c = codes[doc.id];
+const name = c ? c.titel || doc.id : doc.id;
+const div = document.createElement("div");
+div.className = "code-eintrag";
+const icon = antwort === "ja" ? "✓" : "✗";
+const farbe = antwort === "ja" ? "#28a745" : "#dc3545";
+div.innerHTML = `
+<strong style="color:${farbe}">${icon}</strong>
+<p><strong>${name}</strong> (${doc.id})</p>
+<p style="color:${farbe};font-weight:600">${antwort === "ja" ? "Kommt" : "Kommt nicht"}</p>
+`;
+liste.appendChild(div);
+});
+} catch(e) {
+liste.innerHTML = '<p class="hinweis">Fehler beim Laden.</p>';
+}
 }
 
-function setEinstellungen(e) {
-localStorage.setItem("geburtstag_einstellungen", JSON.stringify(e));
+function passwortAendern() {
+const alt = document.getElementById("altesPasswort").value;
+const neu = document.getElementById("neuesPasswort").value;
+const status = document.getElementById("passwortStatus");
+
+if (alt !== getPasswort()) { status.textContent = "Altes Passwort ist falsch."; return; }
+if (!neu || neu.length < 3) { status.textContent = "Neues Passwort muss mind. 3 Zeichen haben."; return; }
+
+setPasswort(neu);
+status.textContent = "Passwort geändert!";
+status.style.color = "#28a745";
+document.getElementById("altesPasswort").value = "";
+document.getElementById("neuesPasswort").value = "";
+setTimeout(() => { status.textContent = ""; status.style.color = "#dc3545"; }, 2000);
 }
 
 function designLaden() {
-const e = getEinstellungen();
+db.collection("settings").doc("main").get().then(doc => {
+if (doc.exists) {
+const e = doc.data();
 document.getElementById("standardBeschreibung").value = e.beschreibung || "";
 const container = document.getElementById("bildVorschauContainer");
 container.innerHTML = "";
@@ -197,11 +198,12 @@ document.getElementById("fotoLoeschenBtn").style.display = "block";
 document.getElementById("fotoLoeschenBtn").style.display = "none";
 }
 }
+});
+}
 
 document.getElementById("fotoUpload").addEventListener("change", function(e) {
 const file = e.target.files[0];
 if (!file) return;
-
 const reader = new FileReader();
 reader.onload = function(event) {
 const container = document.getElementById("bildVorschauContainer");
@@ -216,66 +218,24 @@ reader.readAsDataURL(file);
 });
 
 function fotoLoeschen() {
-const e = getEinstellungen();
-e.bild = "";
-setEinstellungen(e);
+db.collection("settings").doc("main").update({ bild: "" }).then(() => {
 document.getElementById("bildVorschauContainer").innerHTML = "";
 document.getElementById("fotoLoeschenBtn").style.display = "none";
 document.getElementById("designStatus").textContent = "Foto gelöscht!";
-setTimeout(() => {
-document.getElementById("designStatus").textContent = "";
-}, 2000);
-}
-
-function getRSVPs() {
-try {
-const d = localStorage.getItem("geburtstag_rsvp");
-if (d) return JSON.parse(d);
-} catch(e) {}
-return {};
-}
-
-function rsvpAnzeigen() {
-const codes = getCodes();
-const rsvps = getRSVPs();
-const liste = document.getElementById("rsvpListe");
-liste.innerHTML = "";
-
-const keys = Object.keys(rsvps);
-if (keys.length === 0) {
-liste.innerHTML = '<p class="hinweis">Noch keine Rückmeldungen.</p>';
-return;
-}
-
-keys.forEach(key => {
-const antwort = rsvps[key];
-const c = codes[key];
-const name = c ? c.titel || key : key;
-const div = document.createElement("div");
-div.className = "code-eintrag";
-const icon = antwort === "ja" ? "✓" : "✗";
-const farbe = antwort === "ja" ? "#28a745" : "#dc3545";
-div.innerHTML = `
-<strong style="color:${farbe}">${icon}</strong>
-<p><strong>${name}</strong> (${key})</p>
-<p style="color:${farbe};font-weight:600">${antwort === "ja" ? "Kommt" : "Kommt nicht"}</p>
-`;
-liste.appendChild(div);
+setTimeout(() => { document.getElementById("designStatus").textContent = ""; }, 2000);
+}).catch(() => {
+document.getElementById("designStatus").textContent = "Fehler.";
 });
 }
 
 function designSpeichern() {
-const e = getEinstellungen();
-e.beschreibung = document.getElementById("standardBeschreibung").value;
-
+const beschreibung = document.getElementById("standardBeschreibung").value;
 const img = document.querySelector("#bildVorschauContainer img");
-if (img) {
-e.bild = img.src;
-}
-
-setEinstellungen(e);
+const bild = img ? img.src : "";
+db.collection("settings").doc("main").set({ beschreibung, bild }).then(() => {
 document.getElementById("designStatus").textContent = "Gespeichert!";
-setTimeout(() => {
-document.getElementById("designStatus").textContent = "";
-}, 2000);
+setTimeout(() => { document.getElementById("designStatus").textContent = ""; }, 2000);
+}).catch(() => {
+document.getElementById("designStatus").textContent = "Fehler.";
+});
 }
