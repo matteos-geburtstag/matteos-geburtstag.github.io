@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Einladung - Geburtstag</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+<div class="card" id="startseite">
+<h1>Herzliche Einladung</h1>
+<p>Gib deinen persönlichen Code ein, um mehr zu erfahren.</p>
+<input type="text" id="codeInput" placeholder="Dein Code" autocomplete="off">
+<button onclick="codeSuchen()">Öffnen</button>
+<p id="fehler" class="fehler"></p>
+</div>
+
+<div class="card" id="inhalt" style="display:none">
+<img id="hauptBild" class="bild" src="" alt="Geburtstagsbild">
+<h2 id="titel"></h2>
+<p id="beschreibung"></p>
+
+<div id="rsvpBox" class="rsvp">
+<p class="rsvp-frage">Kommst du?</p>
+<p id="rsvpStatus" class="rsvp-status"></p>
+</div>
+
+<button onclick="zurueck()">Zurück</button>
+</div>
+
+<div id="rsvpButtons" class="rsvp-buttons" style="display:none">
+<button class="rsvp-ja" onclick="rsvp('ja')">Ja, ich komme!</button>
+<button class="rsvp-nein" onclick="rsvp('nein')">Leider nein</button>
+</div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

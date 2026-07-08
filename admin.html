@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - Geburtstag</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+<div class="card" id="loginBox">
+<h1>Admin Panel</h1>
+<input type="password" id="passwort" placeholder="Passwort">
+<button onclick="login()">Anmelden</button>
+<p id="loginFehler" class="fehler"></p>
+</div>
+
+<div class="card" id="adminPanel" style="display:none">
+<h1>Panel</h1>
+
+<div class="tabs">
+<button class="tab active" onclick="tabWechseln('codes')">Codes</button>
+<button class="tab" onclick="tabWechseln('rsvp')">RSVP</button>
+<button class="tab" onclick="tabWechseln('design')">Design</button>
+</div>
+
+<div id="tabCodes" class="tab-inhalt">
+<h2>Codes verwalten</h2>
+
+<div class="code-form">
+<input type="text" id="codeKey" placeholder="Code (z.B. GAST1)">
+<input type="text" id="codeTitel" placeholder="Titel">
+<textarea id="codeText" placeholder="Beschreibung"></textarea>
+<button onclick="codeSpeichern()">Speichern</button>
+<button class="sekundaer" onclick="codeAbbrechen()">Abbrechen</button>
+</div>
+
+<div id="codeListe"></div>
+</div>
+
+<div id="tabRsvp" class="tab-inhalt" style="display:none">
+<h2>Rückmeldungen</h2>
+<div id="rsvpListe"></div>
+</div>
+
+<div id="tabDesign" class="tab-inhalt" style="display:none">
+<h2>Design</h2>
+
+<label>Hintergrundbild / Foto</label>
+<input type="file" id="fotoUpload" accept="image/*">
+<div id="bildVorschauContainer"></div>
+
+<label>Standard-Beschreibung</label>
+<textarea id="standardBeschreibung" placeholder="Text, der standardmäßig angezeigt wird"></textarea>
+
+<button onclick="designSpeichern()">Speichern</button>
+<p id="designStatus" class="erfolg"></p>
+</div>
+
+<button class="logout-btn" onclick="logout()">Abmelden</button>
+</div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>
