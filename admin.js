@@ -1,4 +1,4 @@
-const ADMIN_PASSWORT = "2017";
+const ADMIN_PASSWORT = "1234"; // änder das Passwort hier
 
 function login() {
 const pw = document.getElementById("passwort").value;
@@ -157,6 +157,9 @@ const img = document.createElement("img");
 img.src = e.bild;
 img.className = "vorschau-bild";
 container.appendChild(img);
+document.getElementById("fotoLoeschenBtn").style.display = "block";
+} else {
+document.getElementById("fotoLoeschenBtn").style.display = "none";
 }
 }
 
@@ -172,9 +175,22 @@ const img = document.createElement("img");
 img.src = event.target.result;
 img.className = "vorschau-bild";
 container.appendChild(img);
+document.getElementById("fotoLoeschenBtn").style.display = "block";
 };
 reader.readAsDataURL(file);
 });
+
+function fotoLoeschen() {
+const e = getEinstellungen();
+e.bild = "";
+setEinstellungen(e);
+document.getElementById("bildVorschauContainer").innerHTML = "";
+document.getElementById("fotoLoeschenBtn").style.display = "none";
+document.getElementById("designStatus").textContent = "Foto gelöscht!";
+setTimeout(() => {
+document.getElementById("designStatus").textContent = "";
+}, 2000);
+}
 
 function getRSVPs() {
 try {
